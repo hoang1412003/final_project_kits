@@ -1,23 +1,34 @@
 package com.example.library_springboot.services;
 
 import com.example.library_springboot.dtos.BookDTO;
+import com.example.library_springboot.dtos.BookImageDTO;
+import com.example.library_springboot.exceptions.ResourceNotFoundException;
 import com.example.library_springboot.models.Book;
+import com.example.library_springboot.models.BookImage;
 import com.example.library_springboot.models.Category;
+import com.example.library_springboot.repositories.BookImageRepository;
 import com.example.library_springboot.repositories.BookRepository;
 import com.example.library_springboot.repositories.CategoryRepository;
 import com.example.library_springboot.responses.BaseResponses;
 import com.example.library_springboot.responses.BookResponse;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-@AllArgsConstructor
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.InvalidParameterException;
+import java.util.List;
+
+@RequiredArgsConstructor
 @Service
 public class BookService implements IBookService {
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
-
+    private final BookImageRepository bookImageRepository;
 
     @Override
     public Book findBookById(long id) {
@@ -72,4 +83,53 @@ public class BookService implements IBookService {
         }
         bookRepository.deleteById(id);
     }
+
+    @Override
+    public Page<BookResponse> findBooksByCategoryId(Integer categoryId, Pageable pageable) {
+        return bookRepository.findAllByCategoryId(categoryId, pageable).map(BookResponse::fromBook);
+    }
+
+    @Override
+    public BookImage createBookImage(Long id, BookImageDTO bookImageDTO) {
+        Book existingBook = bookRepository.findById(id).orElseThrow(() -> new RuntimeException("Book not found"));
+        BookImage bookImage = BookImage.builder()
+                .book(existingBook)
+                .imageUrl(bookImageDTO.getImageUrl())
+                .build();
+        int size = bookImageRepository.findByBookId(existingBook.getId()).size();
+        if(size >=4) {
+            throw new InvalidParameterException("Mỗi sinh viên ch tối da 4 hình");
+        }
+        return bookImageRepository.save(bookImage);
+    }
+
+    @Override
+    public List<BookImage> getAllBookImagesByBookId(Long bookId) {
+        return bookImageRepository.findByBookId(bookId);
+    }
+
+//    @Override
+//    public void deleteBookImage(Long id) {
+//        BookImage bookImage = bookImageRepository.findById(id).orElseThrow(() -> new RuntimeException("BookImage not found"));
+//        bookImageRepository.delete(bookImage);
+//    }
+@Override
+public void deleteBookImage(Long id) {
+    BookImage bookImage = bookImageRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("BookImage not found"));
+
+    // Xác định đường dẫn tệp hình ảnh
+    String imagePath = "upload/" + bookImage.getImageUrl(); // Hoặc đường dẫn tương ứng với cách bạn lưu trữ
+
+    try {
+        // Xóa tệp hình ảnh từ hệ thống tệp
+        Files.deleteIfExists(Paths.get(imagePath));
+    } catch (IOException e) {
+        throw new RuntimeException("Could not delete the image file: " + e.getMessage());
+    }
+
+    // Xóa bản ghi trong cơ sở dữ liệu
+    bookImageRepository.delete(bookImage);
+}
+
 }
