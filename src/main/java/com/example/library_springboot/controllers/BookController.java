@@ -31,10 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@RestController
-@CrossOrigin(origins = "http://localhost:3000") // allow CORS for this controller
+@RestController // allow CORS for this controller
 @RequestMapping("/api/book")
 @AllArgsConstructor
+@CrossOrigin(origins = "*")
 public class BookController {
 
     private final BookService bookService;

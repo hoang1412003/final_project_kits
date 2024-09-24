@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RequiredArgsConstructor
-@RestController
-@CrossOrigin(origins = "http://localhost:3000") // allow CORS for this controller
+@RestController // allow CORS for this controller
 @RequestMapping("/api/order")
 public class OrderController {
     private final OrderService orderService;
