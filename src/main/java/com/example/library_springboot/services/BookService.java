@@ -6,9 +6,11 @@ import com.example.library_springboot.exceptions.ResourceNotFoundException;
 import com.example.library_springboot.models.Book;
 import com.example.library_springboot.models.BookImage;
 import com.example.library_springboot.models.Category;
+import com.example.library_springboot.models.OrderDetail;
 import com.example.library_springboot.repositories.BookImageRepository;
 import com.example.library_springboot.repositories.BookRepository;
 import com.example.library_springboot.repositories.CategoryRepository;
+import com.example.library_springboot.repositories.OrderDetailRepository;
 import com.example.library_springboot.responses.BaseResponses;
 import com.example.library_springboot.responses.BookResponse;
 import lombok.AllArgsConstructor;
@@ -29,7 +31,7 @@ public class BookService implements IBookService {
     private final BookRepository bookRepository;
     private final CategoryRepository categoryRepository;
     private final BookImageRepository bookImageRepository;
-
+    private final OrderDetailRepository orderDetailRepository;
     @Override
     public Book findBookById(long id) {
         return bookRepository.findById(id).orElse(null);
@@ -80,6 +82,14 @@ public class BookService implements IBookService {
         Book book = findBookById(id);
         if(book == null) {
             throw new RuntimeException("Book not found");
+        }
+        List<BookImage> bookImages = bookImageRepository.findByBookId(book.getId());
+        for (BookImage bookImage : bookImages) {
+            bookImageRepository.delete(bookImage);
+        }
+        List<OrderDetail> orderDetails = orderDetailRepository.findByBookId(id);
+        for (OrderDetail orderDetail : orderDetails) {
+            orderDetailRepository.delete(orderDetail);
         }
         bookRepository.deleteById(id);
     }
